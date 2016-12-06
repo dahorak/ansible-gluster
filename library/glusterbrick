@@ -266,6 +266,7 @@ def main():
     params = module.params
 
     output=""
+    ret = None
     if (params['command'] == "create_brick"):
         brick = GlusterBrick(module)
 
@@ -275,7 +276,7 @@ def main():
 
         (ret,output,serr) = brick.destroyBrick()
     elif (params['command'] == "autocreate"):
-        device_list = os.popen("lvmdiskscan | egrep 'sd|vd' | egrep -v 'sda|vda' | awk '{print $1}'").readlines()
+        device_list = os.popen("lvmdiskscan | egrep 'sd|vd' | egrep -v -e 'sda|vda' -e LVM | awk '{print $1}'""").readlines()
 
         device_counter = 0
         for thedevice in device_list:
@@ -301,7 +302,7 @@ def main():
             
             output = device_counter
     elif (params['command'] == "autodestroy"):
-        device_list = os.popen("lvmdiskscan | egrep 'sd|vd' | egrep -v 'sda|vda' | awk '{print $1}'").readlines()
+        device_list = os.popen("lvmdiskscan | egrep 'sd|vd' | egrep -v 'sda|vda' | grep LVM | awk '{print $1}'").readlines()
 
         device_counter = 0
         for thedevice in device_list:
@@ -328,8 +329,10 @@ def main():
         output = ""
         serr = "No valid command provided. Nothing to do."
 
-    if ret == 0:
-        module.exit_json(msg=output)
+    if ret is None:
+        module.exit_json(changed=False, msg=output)
+    elif ret == 0:
+        module.exit_json(changed=True, msg=output)
     else:
         module.fail_json(msg=output + ": " + serr)
 
